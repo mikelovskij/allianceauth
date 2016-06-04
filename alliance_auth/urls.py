@@ -157,6 +157,13 @@ urlpatterns = patterns('',
                            name='auth_reset_smf_password'),
                        url(r'^set_smf_password/$', 'services.views.set_smf_password', name='auth_set_smf_password'),
 
+                       # SeAT Service Control
+                       url(r'^activate_seat/$', 'services.views.activate_seat', name='auth_activate_seat'),
+                       url(r'^deactivate_seat/$', 'services.views.deactivate_seat', name='auth_deactivate_seat'),
+                       url(r'^reset_seat_password/$', 'services.views.reset_seat_password',
+                           name='auth_reset_seat_password'),
+                       url(r'^set_seat_password/$', 'services.views.set_seat_password', name='auth_set_seat_password'),
+
                        # Alliance Market Control
                        url(r'^activate_market/$', 'services.views.activate_market', name='auth_activate_market'),
                        url(r'^deactivate_market/$', 'services.views.deactivate_market', name='auth_deactivate_market'),

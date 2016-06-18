@@ -235,7 +235,7 @@ KILLBOARD_URL = os.environ.get('AA_KILLBOARD_URL', '')
 EXTERNAL_MEDIA_URL = os.environ.get('AA_EXTERNAL_MEDIA_URL', '')
 FORUM_URL = os.environ.get('AA_FORUM_URL', '')
 SMF_URL = os.environ.get('AA_SMF_URL', '')
-SEAT_URL = os.environ.get('AA_SEAT_URL', '')
+
 
 #########################
 # Default Group Settings
@@ -408,6 +408,15 @@ BROADCAST_SERVICE_NAME = os.environ.get('AA_BROADCAST_SERVICE_NAME', "broadcast"
 ######################################
 MUMBLE_URL = os.environ.get('AA_MUMBLE_URL', "yourdomain.com")
 MUMBLE_SERVER_ID = int(os.environ.get('AA_MUMBLE_SERVER_ID', '1'))
+
+#####################################
+# SEAT Configuration
+#####################################
+# SEAT_URL - base url of the seat install (no trailing slash)
+# SEAT_XTOKEN - API key X-Token provided by SeAT
+#####################################
+SEAT_URL = os.environ.get('AA_SEAT_URL', 'http://yourdomain.com/seat')
+SEAT_XTOKEN = os.environ.get('AA_SEAT_XTOKEN', '')
 
 ######################################
 # Teamspeak3 Configuration

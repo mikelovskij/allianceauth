@@ -61,6 +61,7 @@ def domain_url(request):
             'KILLBOARD_URL': settings.KILLBOARD_URL,
             'DISCOURSE_URL': settings.DISCOURSE_URL,
             'IPS4_URL': settings.IPS4_URL,
+            'SEAT_URL': settings.SEAT_URL,
             'SMF_URL': settings.SMF_URL,
             'MARKET_URL': settings.MARKET_URL,
             'PATHFINDER_URL': settings.PATHFINDER_URL,

@@ -78,6 +78,7 @@ def deactivate_services(user):
         XenForoManager.disable_user(authinfo.xenforo_username)
         AuthServicesInfoManager.update_user_xenforo_info("", "", user)
         change = True
+    # TODO: add seat
     if change:
         notify(user, "Services Disabled", message="Your services accounts have been disabled.", level="danger")
 

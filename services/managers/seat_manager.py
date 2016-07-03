@@ -1,7 +1,7 @@
 import os
 import requests
 from hashlib import md5
-
+from eveonline.managers import EveManager
 from django.conf import settings
 
 import logging
@@ -97,6 +97,24 @@ class SeatManager:
         ret = SeatManager.exec_request('user/' + sanatized, 'get')
         logger.debug(ret)
         return ret
+
+    @staticmethod
+    def synchronize_eveapis(api_user, seat_user):
+        userinfo = SeatManager.check_user_status(seat_user)
+        keypars = EveManager.get_api_key_pairs(api_user)
+        if keypars:
+            for keypar in keypars:
+                logger.debug("Adding Api Key with ID %s" % keypar.api_id)
+                ret = SeatManager.exec_request('key', 'post', key_id=keypar.api_id, v_code=keypar.api_key)
+                logger.debug(ret)
+                logger.debug("Transferring Api Key with ID %s to user %s with ID %s " % (keypar.api_id, seat_user,
+                                                                                        userinfo['id']))
+                ret = SeatManager.exec_request('key/transfer/' + keypar.api_id + '/' + userinfo['id'], 'get')
+                logger.debug(ret)
+
+
+
+
 
 
 #    @staticmethod

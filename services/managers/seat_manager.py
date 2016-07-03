@@ -29,7 +29,6 @@ class SeatManager:
             headers = {'X-Token': settings.SEAT_XTOKEN, 'Accept': 'application/json'}
             logger.debug(headers)
             logger.debug(endpoint)
-            logger.debug(kwargs)
             ret = getattr(requests, func)(endpoint, headers=headers, data=kwargs)
             return ret.json()
         except:

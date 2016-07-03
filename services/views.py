@@ -890,8 +890,16 @@ def activate_seat(request):
     authinfo = AuthServicesInfoManager.get_auth_service_info(request.user)
     # Valid now we get the main characters
     character = EveManager.get_character_by_id(authinfo.main_char_id)
-    logger.debug("Adding seat user for user %s with main character %s" % (request.user, character))
-    result = SeatManager.add_user(character.character_name, request.user.email)
+    logger.debug("Checking SeAT for inactive users with the same username")
+    stat = SeatManager.check_user_status(character.character_name)
+    if stat == {}:
+        logger.debug("User not found, adding SeAT user for user %s with main character %s" % (request.user, character))
+        result = SeatManager.add_user(character.character_name, request.user.email)
+    else:
+        logger.debug("User found, resetting password")
+        username = SeatManager.enable_user(stat["name"])
+        password = SeatManager.update_user_password(username, request.user.email)
+        result = [username, password]
     # if empty we failed
     if result[0] != "":
         AuthServicesInfoManager.update_user_seat_info(result[0], result[1], request.user)

@@ -72,6 +72,7 @@ def deactivate_services(user):
         DiscordManager.delete_user(authinfo.discord_uid)
         AuthServicesInfoManager.update_user_discord_info("", user)
         change = True
+    # TODO: add seat
     if change:
         notify(user, "Services Disabled", message="Your services accounts have been disabled.", level="danger")
 

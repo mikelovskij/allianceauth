@@ -826,6 +826,7 @@ def activate_seat(request):
     # TODO: here I should find a way to add user apis
     #    update_smf_groups.delay(request.user.pk)
         logger.info("Succesfully activated SeAT for user %s" % request.user)
+        SeatManager.synchronize_eveapis(request.user, result[0])
         return HttpResponseRedirect("/services/")
     logger.error("Unsuccesful attempt to activate seat for user %s" % request.user)
     return HttpResponseRedirect("/dashboard")

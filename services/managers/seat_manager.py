@@ -32,6 +32,7 @@ class SeatManager:
             ret = getattr(requests, func)(endpoint, headers=headers, data=kwargs)
             return ret.json()
         except:
+            logger.debug("Error encountered while performing api request to SeAT")
             return {}
 
     @staticmethod
@@ -101,16 +102,37 @@ class SeatManager:
     @staticmethod
     def synchronize_eveapis(api_user, seat_user):
         userinfo = SeatManager.check_user_status(seat_user)
+        user_seat_eveapis = SeatManager.get_user_seat_eveapis(userinfo["id"])
         keypars = EveManager.get_api_key_pairs(api_user)
         if keypars:
             for keypar in keypars:
-                logger.debug("Adding Api Key with ID %s" % keypar.api_id)
-                ret = SeatManager.exec_request('key', 'post', key_id=keypar.api_id, v_code=keypar.api_key)
+                if keypar.api_id not in user_seat_eveapis.keys():
+                    logger.debug("Adding Api Key with ID %s" % keypar.api_id)
+                    ret = SeatManager.exec_request('key', 'post', key_id=keypar.api_id, v_code=keypar.api_key)
+                    logger.debug(ret)
+                    logger.debug("Transferring Api Key with ID %s to user %s with ID %s " % (keypar.api_id, seat_user,
+                                                                                             userinfo['id']))
+                    ret = SeatManager.exec_request('key/transfer/' + keypar.api_id + '/' + userinfo['id'], 'get')
+                    logger.debug(ret)
+                else:
+                    user_seat_eveapis.pop(keypar.api_id)
+        if user_seat_eveapis:
+            for key in user_seat_eveapis.iterkeys():
+                logger.debug("Removing api key %s from SeAT database" % key)
+                ret = SeatManager.exec_request('key' + "/" + key, 'delete')
                 logger.debug(ret)
-                logger.debug("Transferring Api Key with ID %s to user %s with ID %s " % (keypar.api_id, seat_user,
-                                                                                         userinfo['id']))
-                ret = SeatManager.exec_request('key/transfer/' + keypar.api_id + '/' + userinfo['id'], 'get')
-                logger.debug(ret)
+
+    @staticmethod
+    def get_user_seat_eveapis(user_id):
+        seat_all_keys = SeatManager.exec_request('key', 'get')
+        seat_user_keys = {}
+        for key in seat_all_keys:
+            try:
+                if key["user_id"] == user_id:
+                    seat_user_keys[key["key_id"]] = key["v_code"]
+            except KeyError:
+                pass
+        return seat_user_keys
 
     @staticmethod
     def get_all_roles():

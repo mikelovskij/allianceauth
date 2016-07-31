@@ -9,8 +9,9 @@ from services.managers.openfire_manager import OpenfireManager
 from services.managers.mumble_manager import MumbleManager
 from services.managers.phpbb3_manager import Phpbb3Manager
 from services.managers.ipboard_manager import IPBoardManager
+from services.managers.xenforo_manager import XenForoManager
 from services.managers.teamspeak3_manager import Teamspeak3Manager
-from services.managers.discord_manager import DiscordManager, DiscordAPIManager
+from services.managers.discord_manager import DiscordOAuthManager
 from services.managers.discourse_manager import DiscourseManager
 from services.managers.smf_manager import smfManager
 from services.models import AuthTS
@@ -74,6 +75,12 @@ def update_jabber_groups(pk):
     logger.debug("Updated user %s jabber groups." % user)
 
 @task
+def update_all_jabber_groups():
+    logger.debug("Updating ALL jabber groups")
+    for user in AuthServicesInfo.objects.exclude(jabber_username__exact=''):
+        update_jabber_groups.delay(user.user_id)
+
+@task
 def update_mumble_groups(pk):
     user = User.objects.get(pk=pk)
     logger.debug("Updating mumble groups for user %s" % user)
@@ -90,6 +97,12 @@ def update_mumble_groups(pk):
         logger.exception("Mumble group sync failed for %s, retrying in 10 mins" % user)
         raise self.retry(countdown = 60 * 10)
     logger.debug("Updated user %s mumble groups." % user)
+
+@task
+def update_all_mumble_groups():
+    logger.debug("Updating ALL mumble groups")
+    for user in AuthServicesInfo.objects.exclude(mumble_username__exact=''):
+        update_mumble_groups.delay(user.user_id)
 
 @task
 def update_forum_groups(pk):
@@ -110,6 +123,12 @@ def update_forum_groups(pk):
     logger.debug("Updated user %s forum groups." % user)
 
 @task
+def update_all_forum_groups():
+    logger.debug("Updating ALL forum groups")
+    for user in AuthServicesInfo.objects.exclude(forum_username__exact=''):
+        update_forum_groups.delay(user.user_id)
+
+@task
 def update_smf_groups(pk):
     user = User.objects.get(pk=pk)
     logger.debug("Updating smf groups for user %s" % user)
@@ -127,6 +146,11 @@ def update_smf_groups(pk):
         raise self.retry(countdown = 60 * 10)
     logger.debug("Updated user %s smf groups." % user)
 
+@task
+def update_all_smf_groups():
+    logger.debug("Updating ALL smf groups")
+    for user in AuthServicesInfo.objects.exclude(smf_username__exact=''):
+        update_smf_groups.delay(user.user_id)
 
 @task
 def update_ipboard_groups(pk):
@@ -147,6 +171,12 @@ def update_ipboard_groups(pk):
     logger.debug("Updated user %s ipboard groups." % user)
 
 @task
+def update_all_ipboard_groups():
+    logger.debug("Updating ALL ipboard groups")
+    for user in AuthServicesInfo.objects.exclude(ipboard_username__exact=''):
+        update_ipboard_groups.delay(user.user_id)
+
+@task
 def update_teamspeak3_groups(pk):
     user = User.objects.get(pk=pk)
     logger.debug("Updating user %s teamspeak3 groups" % user)
@@ -164,6 +194,12 @@ def update_teamspeak3_groups(pk):
     logger.debug("Updated user %s teamspeak3 groups." % user)
 
 @task
+def update_all_teamspeak3_groups():
+    logger.debug("Updating ALL teamspeak3 groups")
+    for user in AuthServicesInfo.objects.exclude(teamspeak3_uid__exact=''):
+        update_teamspeak3_groups.delay(user.user_id)
+
+@task
 def update_discord_groups(pk):
     user = User.objects.get(pk=pk)
     logger.debug("Updating discord groups for user %s" % user)
@@ -176,11 +212,17 @@ def update_discord_groups(pk):
         groups.append('empty')
     logger.debug("Updating user %s discord groups to %s" % (user, groups))
     try:
-        DiscordManager.update_groups(authserviceinfo.discord_uid, groups)
+        DiscordOAuthManager.update_groups(authserviceinfo.discord_uid, groups)
     except:
         logger.exception("Discord group sync failed for %s, retrying in 10 mins" % user)
         raise self.retry(countdown = 60 * 10)
     logger.debug("Updated user %s discord groups." % user)
+
+@task
+def update_all_discord_groups():
+    logger.debug("Updating ALL discord groups")
+    for user in AuthServicesInfo.objects.exclude(discord_uid__exact=''):
+        update_discord_groups.delay(user.user_id)
 
 @task
 def update_discourse_groups(pk):
@@ -200,6 +242,12 @@ def update_discourse_groups(pk):
         logger.warn("Discourse group sync failed for %s, retrying in 10 mins" % user, exc_info=True)
         raise self.retry(countdown = 60 * 10)
     logger.debug("Updated user %s discord groups." % user)
+
+@task
+def update_all_discourse_groups():
+    logger.debug("Updating ALL discourse groups")
+    for user in AuthServicesInfo.objects.exclude(discourse_username__exact=''):
+        update_discourse_groups.delay(user.user_id)
 
 
 def assign_corp_group(auth):
@@ -360,7 +408,10 @@ def set_state(user):
     if user.is_superuser:
         return
     change = False
-    state = determine_membership_by_user(user)
+    if user.is_active:
+        state = determine_membership_by_user(user)
+    else:
+        state = False
     logger.debug("Assigning user %s to state %s" % (user, state))
     if state == "MEMBER":
         change = make_member(user)
@@ -370,18 +421,6 @@ def set_state(user):
         change = disable_member(user)
     if change:
         notify(user, "Membership State Change", message="You membership state has been changed to %s" % state)
-
-# Run every 2 hours
-@periodic_task(run_every=crontab(minute="0", hour="*/2"))
-def run_discord_token_cleanup():
-    logger.debug("Running validation of all DiscordAuthTokens")
-    for auth in DiscordAuthToken.objects.all():
-        logger.debug("Testing DiscordAuthToken %s" % auth)
-        if DiscordAPIManager.validate_token(auth.token):
-            logger.debug("Token passes validation. Retaining %s" % auth)
-        else:
-            logger.debug("DiscordAuthToken failed validation. Deleting %s" % auth)
-            auth.delete()
 
 def refresh_api(api_key_pair):
     logger.debug("Running update on api key %s" % api_key_pair.api_id)
@@ -430,6 +469,11 @@ def refresh_api(api_key_pair):
                if new_character:
                    logger.debug("Creating new character %s from api key %s" % (characters.result[char]['name'], api_key_pair.api_id))
                    EveManager.create_characters_from_list(characters, user, api_key_pair.api_id)
+           current_chars = EveCharacter.objects.filter(api_id=api_key_pair.api_id)
+           for c in current_chars:
+               if not int(c.character_id) in characters.result:
+                   logger.info("Character %s no longer found on API ID %s" % (c, api_key_pair.api_id))
+                   c.delete()
     else:
         logger.debug("API key %s is no longer valid; it and its characters will be deleted." % api_key_pair.api_id)
         EveManager.delete_characters_by_api_id(api_key_pair.api_id, user.id)

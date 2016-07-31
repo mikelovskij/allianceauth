@@ -32,6 +32,7 @@ from celerytask.tasks import update_smf_groups
 from celerytask.tasks import update_teamspeak3_groups
 from celerytask.tasks import update_discord_groups
 from celerytask.tasks import update_discourse_groups
+from celerytask.tasks import update_seat_roles
 from forms import JabberBroadcastForm
 from forms import FleetFormatterForm
 from forms import DiscordForm
@@ -904,8 +905,7 @@ def activate_seat(request):
     if result[0] != "":
         AuthServicesInfoManager.update_user_seat_info(result[0], result[1], request.user)
         logger.debug("Updated authserviceinfo for user %s with SeAT credentials.Adding eve-apis..." % request.user)
-    # TODO: here I should find a way to add user apis
-    #    update_smf_groups.delay(request.user.pk)
+        update_seat_roles.delay(request.user.pk)
         logger.info("Succesfully activated SeAT for user %s" % request.user)
         SeatManager.synchronize_eveapis(request.user, result[0])
         return HttpResponseRedirect("/services/")

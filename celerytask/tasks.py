@@ -13,6 +13,7 @@ from services.managers.xenforo_manager import XenForoManager
 from services.managers.teamspeak3_manager import Teamspeak3Manager
 from services.managers.discord_manager import DiscordOAuthManager
 from services.managers.discourse_manager import DiscourseManager
+from services.managers.seat_manager import SeatManager
 from services.managers.smf_manager import smfManager
 from services.models import AuthTS
 from services.models import TSgroup
@@ -249,6 +250,30 @@ def update_all_discourse_groups():
     for user in AuthServicesInfo.objects.exclude(discourse_username__exact=''):
         update_discourse_groups.delay(user.user_id)
 
+@task
+def update_seat_roles(pk):
+    user = User.objects.get(pk=pk)
+    logger.debug("Updating SeAT roles for user %s" % user)
+    authserviceinfo = AuthServicesInfo.objects.get(user=user)
+    groups = []
+    for group in user.groups.all():
+        groups.append(str(group.name))
+    if len(groups) == 0:
+        logger.debug("No syncgroups found for user. Adding empty group.")
+        groups.append('empty')
+    logger.debug("Updating user %s SeAT roles to %s" % (user, groups))
+    try:
+        SeatManager.update_roles(authserviceinfo.seat_username, groups)
+    except:
+        logger.warn("SeAT group sync failed for %s, retrying in 10 mins" % user, exc_info=True)
+        raise self.retry(countdown = 60 * 10)
+    logger.debug("Updated user %s SeAT roles." % user)
+
+@task
+def update_all_seat_roles():
+    logger.debug("Updating ALL SeAT roles")
+    for user in AuthServicesInfo.objects.exclude(seat_username__exact=''):
+        update_seat_roles.delay(user.user_id)
 
 def assign_corp_group(auth):
     corp_group = None

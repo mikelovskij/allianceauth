@@ -9,6 +9,7 @@ from services.managers.ipboard_manager import IPBoardManager
 from services.managers.teamspeak3_manager import Teamspeak3Manager
 from services.managers.discord_manager import DiscordOAuthManager
 from services.managers.xenforo_manager import XenForoManager
+from services.managers.seat_manager import SeatManager
 
 import logging
 
@@ -78,7 +79,11 @@ def deactivate_services(user):
         XenForoManager.disable_user(authinfo.xenforo_username)
         AuthServicesInfoManager.update_user_xenforo_info("", "", user)
         change = True
-    # TODO: add seat
+    if authinfo.seat_username and authinfo.seat_username != "":
+        logger.debug("User %s has a SeAT account %s. Disabling." % (user, authinfo.seat_username))
+        SeatManager.disable_user(authinfo.seat_username)
+        AuthServicesInfoManager.update_user_seat_info("", "", user)
+        change = True
     if change:
         notify(user, "Services Disabled", message="Your services accounts have been disabled.", level="danger")
 

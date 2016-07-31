@@ -922,9 +922,9 @@ def deactivate_seat(request):
     # false we failed
     if result:
         AuthServicesInfoManager.update_user_seat_info("", "", request.user)
-        logger.info("Succesfully deactivated SeAT for user %s" % request.user)
+        logger.info("Successfully deactivated SeAT for user %s" % request.user)
         return HttpResponseRedirect("/services/")
-    logger.error("Unsuccesful attempt to activate SeAT for user %s" % request.user)
+    logger.error("Unsuccessful attempt to activate SeAT for user %s" % request.user)
     return HttpResponseRedirect("/dashboard")
 
 

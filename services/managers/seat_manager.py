@@ -1,12 +1,12 @@
 import os
 import requests
-from hashlib import md5
 from eveonline.managers import EveManager
 from django.conf import settings
 
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 class SeatManager:
     def __init__(self):
@@ -56,15 +56,16 @@ class SeatManager:
     @staticmethod
     def disable_user(username):
         """ Disable user """
-        ret = SeatManager.exec_request('user/' + username, 'put',  active=0)
+        ret = SeatManager.exec_request('user/' + username, 'put', active=0)
+        SeatManager.update_roles(username, [])
         logger.debug(ret)
         logger.info("Disabled SeAT user with username %s" % username)
         return username
 
     @staticmethod
     def enable_user(username):
-        """ Disable user """
-        ret = SeatManager.exec_request('user/' + username, 'put',  active=1)
+        """ Enable user """
+        ret = SeatManager.exec_request('user/' + username, 'put', active=1)
         logger.debug(ret)
         logger.info("Enabled SeAT user with username %s" % username)
         return username
@@ -107,76 +108,60 @@ class SeatManager:
                 ret = SeatManager.exec_request('key', 'post', key_id=keypar.api_id, v_code=keypar.api_key)
                 logger.debug(ret)
                 logger.debug("Transferring Api Key with ID %s to user %s with ID %s " % (keypar.api_id, seat_user,
-                                                                                        userinfo['id']))
+                                                                                         userinfo['id']))
                 ret = SeatManager.exec_request('key/transfer/' + keypar.api_id + '/' + userinfo['id'], 'get')
                 logger.debug(ret)
 
+    @staticmethod
+    def get_all_roles():
+        groups = {}
+        ret = SeatManager.exec_request('role', 'get')
+        logger.debug(ret)
+        for group in ret:
+            groups[group["title"]] = group["id"]
+        logger.debug("Retrieved role list from SeAT: %s" % str(groups))
+        return groups
 
+    @staticmethod
+    def add_role(role):
+        ret = SeatManager.exec_request('role/new', 'post', name=role)
+        logger.debug(ret)
+        logger.info("Added Seat group %s" % role)
+        role_info = SeatManager.exec_request('role/detail/' + role, 'get')
+        logger.debug(role_info)
+        return role_info["id"]
 
+    @staticmethod
+    def add_role_to_user(user_id, role_id):
+        ret = SeatManager.exec_request('role/grant-user-role/' + user_id + "/" + role_id, 'get')
+        logger.info("Added role %s to user %s" % (role_id, user_id))
+        return ret
 
+    @staticmethod
+    def revoke_role_from_user(user_id, role_id):
+        ret = SeatManager.exec_request('role/revoke-user-role/' + user_id + "/" + role_id, 'get')
+        logger.info("Revoked role %s from user %s" % (role_id, user_id))
+        return ret
 
+    @staticmethod
+    def update_roles(seat_user, roles):
+        logger.debug("Updating SeAT user %s with roles %s" % (seat_user, roles))
+        user_info = SeatManager.check_user_status(seat_user)
+        user_roles = {}
+        if type(user_info["roles"]) is list:
+            for role in user_info["roles"]:
+                user_roles[role["title"]] = role["id"]
+        logger.debug("Got user %s SeAT roles %s" % (seat_user, user_roles))
+        seat_roles = SeatManager.get_all_roles()
+        addroles = set(roles) - set(user_roles.keys())
+        remroles = set(user_roles.keys()) - set(roles)
 
-#    @staticmethod
-#    def get_all_groups():
-#        groups = []
-#        ret = IPBoardManager.exec_xmlrpc('getAllGroups')
-#        for group in ret:
-#            groups.append(group["g_title"])
-#        logger.debug("Retrieved group list from IPBoard: %s" % groups)
-#        return groups
-
-#    @staticmethod
-#    def get_user_groups(username):
-#        groups = []
-#        ret = IPBoardManager.exec_xmlrpc('getUserGroups', username=username)
-#        if type(ret) is list:
-#            for group in ret:
-#                groups.append(group["g_title"])
-#        logger.debug("Got user %s IPBoard groups %s" % (username, groups))
-#        return groups
-
-#    @staticmethod
-#    def add_group(group):
-#        ret = IPBoardManager.exec_xmlrpc('addGroup', group=group)
-#        logger.info("Added IPBoard group %s" % group)
-#        return ret
-
-#    @staticmethod
-#    def add_user_to_group(username, group):
-#        ret = IPBoardManager.exec_xmlrpc('addUserToGroup', username=username, group=group)
-#        logger.info("Added IPBoard user %s to group %s" % (username, group))
-#        return ret
-
-#    @staticmethod
-#    def remove_user_from_group(username, group):
-#        ret = IPBoardManager.exec_xmlrpc('removeUserFromGroup', username=username, group=group)
-#        logger.info("Removed IPBoard user %s from group %s" % (username, group))
-#        return ret
-
-#    @staticmethod
-#    def help_me():
-#        "Random help me"
-#        ret = IPBoardManager.exec_xmlrpc('helpMe')
-#        return ret
-
-#    @staticmethod
-#    def update_groups(username, groups):
-#        logger.debug("Updating IPBoard user %s with groups %s" % (username, groups))
-#        forum_groups = IPBoardManager.get_all_groups()
-#        user_groups = set(IPBoardManager.get_user_groups(username))
-#        act_groups = set([g.replace(' ', '-') for g in groups])
-#        addgroups = act_groups - user_groups
-#        remgroups = user_groups - act_groups
-
-#        logger.info("Updating IPBoard groups for user %s - adding %s, removing %s" % (username, addgroups, remgroups))
-#        for g in addgroups:
-#            if not g in forum_groups:
-#                IPBoardManager.add_group(g)
-#            logger.debug("Adding user %s to IPBoard group %s" % (username, g))
-#            IPBoardManager.add_user_to_group(username, g)
-
-#        for g in remgroups:
-#            logger.debug("Removing user %s from IPBoard group %s" % (username, g))
-#            IPBoardManager.remove_user_from_group(username, g)
-
-
+        logger.info("Updating SeAT roles for user %s - adding %s, removing %s" % (seat_user, addroles, remroles))
+        for r in addroles:
+            if r not in seat_roles:
+                seat_roles[r] = SeatManager.add_role(r)
+            logger.debug("Adding role %s to SeAT user %s" % (r, seat_user))
+            SeatManager.add_role_to_user(user_info["id"], seat_roles[r])
+        for r in remroles:
+            logger.debug("Removing role %s from user %s" % (r, seat_user))
+            SeatManager.revoke_role_from_user(user_info["id"], seat_roles[r])

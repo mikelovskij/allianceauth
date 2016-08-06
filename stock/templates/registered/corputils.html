@@ -142,9 +142,9 @@
                                             <td>
                                                 {% for char in player.altlist %}
                                                     {% if ENABLE_BLUE_SEAT or ENABLE_AUTH_SEAT %}
-                                                        <p><a href="{{SEAT_URL}}/character/view/sheet/{{ player.main.character_id }}">{{ maincharname }}</a></p>
+                                                        <p><a href="{{SEAT_URL}}/character/view/sheet/{{ char.character_id }}">{{ char.character_name }}</a></p>
                                                     {% else %}
-                                                        <p>{{ maincharname }}</p>
+                                                        <p>{{ char.character_name }}</p>
                                                     {%  endif %}
                                                 {% endfor %}
                                             </td>

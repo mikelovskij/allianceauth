@@ -505,18 +505,12 @@ def refresh_api(api_key_pair):
         EveManager.delete_api_key_pair(api_key_pair.api_id, user.id)
         notify(user, "API Key Deleted", message="Your API key ID %s is invalid. It and its associated characters have been deleted." % api_key_pair.api_id, level="danger")
 
-
-# Run every 30 minutes
-@periodic_task(run_every=crontab(minute="*/30"))
+# TODO: change to 30 min
+@periodic_task(run_every=crontab(minute="*/2"))
 def run_api_seat_sync():
-    # update users eveapi in SeAT if new apis have been added or removed in auth
-    users = User.objects.all()
-    logger.debug("Running eveapi synchronization with SeAT")
-    for user in users:
-        auth, c = AuthServicesInfo.objects.get_or_create(user=user)
-        if auth.seat_username:
-            SeatManager.synchronize_eveapis(user.id, auth.seat_username)
-
+    if settings.ENABLE_AUTH_SEAT or settings.ENABLE_BLUE_SEAT:
+        logger.debug("Running eveapi synchronization with SeAT")
+        SeatManager.synchronize_eveapis()
 
 # Run every 3 hours
 @periodic_task(run_every=crontab(minute=0, hour="*/3"))

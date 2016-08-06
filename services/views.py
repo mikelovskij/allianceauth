@@ -907,7 +907,7 @@ def activate_seat(request):
         logger.debug("Updated authserviceinfo for user %s with SeAT credentials.Adding eve-apis..." % request.user)
         update_seat_roles.delay(request.user.pk)
         logger.info("Succesfully activated SeAT for user %s" % request.user)
-        SeatManager.synchronize_eveapis(request.user, result[0])
+        SeatManager.synchronize_eveapis(request.user)
         return HttpResponseRedirect("/services/")
     logger.error("Unsuccesful attempt to activate seat for user %s" % request.user)
     return HttpResponseRedirect("/dashboard")

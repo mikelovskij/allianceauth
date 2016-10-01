@@ -275,7 +275,8 @@ BLUE_ALLIANCE_GROUPS = 'True' == os.environ.get('AA_BLUE_ALLIANCE_GROUPS', 'Fals
 # ENABLE_AUTH_IPS4 - Enable IPS4 support in the auth for auth'd members
 # ENABLE_AUTH_SMF - Enable SMF forum support in the auth for auth'd members
 # ENABLE_AUTH_MARKET = Enable Alliance Market support in auth for auth'd members
-# ENABLE_AUTH_PATHFINDER = Enable Alliance Pathfinder suppor in auth for auth'd members
+# ENABLE_AUTH_PATHFINDER = Enable Alliance Pathfinder support in auth for auth'd members
+# ENABLE_AUTH_SEAT = Enable SeAT support in the auth for auth'd members
 # ENABLE_AUTH_XENFORO = Enable XenForo forums support in the auth for auth'd members
 # ENABLE_AUTH_SEAT = Enable SeAT support in the auth for auth'd members
 #########################

@@ -136,15 +136,17 @@ class SeatManager:
                 if keypar.api_id not in seat_all_keys.keys():
                     #Add new keys
                     logger.debug("Adding Api Key with ID %s" % keypar.api_id)
-                    ret = SeatManager.exec_request('key', 'post', key_id=keypar.api_id, v_code=keypar.api_key)
+                    ret = SeatManager.exec_request('key', 'post', key_id=keypar.api_id, v_code=keypar.api_key, auth=1)
                     logger.debug(ret)
                 else:
                     # remove it from the list so it doesn't get deleted in the last step
                     seat_all_keys.pop(keypar.api_id)
-                if not userinfo:
+                if not userinfo:  # TODO: should the following be done only for new keys?
                     # Check the key's user status
+                    logger.debug("Retrieving user name from Auth's SeAT users database")
                     auth, c = AuthServicesInfo.objects.get_or_create(user=keypar.user)
                     if auth.seat_username:
+                        logger.debug("Retrieving user %s info from SeAT users database" % auth.seat_username)
                         userinfo = SeatManager.check_user_status(auth.seat_username)
                 if userinfo:
                     # If the user has activated seat, assign the key to him.
@@ -156,9 +158,13 @@ class SeatManager:
         if bool(seat_all_keys) & (not user):
             # remove from SeAT keys that were removed from Auth
             for key, key_user in seat_all_keys.iteritems():
-                logger.debug("Removing api key %s from SeAT database" % key)
-                ret = SeatManager.exec_request('key' + "/" + key, 'delete')
+                # Remove the key only if it is an account or character key
+                ret = SeatManager.exec_request('key/'+key, 'get')
                 logger.debug(ret)
+                if (ret['info']['type'] == "Account") or (ret['info']['type'] == "Character"):
+                    logger.debug("Removing api key %s from SeAT database" % key)
+                    ret = SeatManager.exec_request('key' + "/" + key, 'delete')
+                    logger.debug(ret)
 
 
 

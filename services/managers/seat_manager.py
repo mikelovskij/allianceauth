@@ -136,7 +136,7 @@ class SeatManager:
                 if keypar.api_id not in seat_all_keys.keys():
                     #Add new keys
                     logger.debug("Adding Api Key with ID %s" % keypar.api_id)
-                    ret = SeatManager.exec_request('key', 'post', key_id=keypar.api_id, v_code=keypar.api_key, auth=1)
+                    ret = SeatManager.exec_request('key', 'post', key_id=keypar.api_id, v_code=keypar.api_key)
                     logger.debug(ret)
                 else:
                     # remove it from the list so it doesn't get deleted in the last step
@@ -161,10 +161,13 @@ class SeatManager:
                 # Remove the key only if it is an account or character key
                 ret = SeatManager.exec_request('key/'+key, 'get')
                 logger.debug(ret)
-                if (ret['info']['type'] == "Account") or (ret['info']['type'] == "Character"):
-                    logger.debug("Removing api key %s from SeAT database" % key)
-                    ret = SeatManager.exec_request('key' + "/" + key, 'delete')
-                    logger.debug(ret)
+                try:
+                    if (ret['info']['type'] == "Account") or (ret['info']['type'] == "Character"):
+                        logger.debug("Removing api key %s from SeAT database" % key)
+                        ret = SeatManager.exec_request('key' + "/" + key, 'delete')
+                        logger.debug(ret)
+                except KeyError:
+                    pass
 
 
 
